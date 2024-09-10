@@ -33,6 +33,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "127.0.0.1",
         "--port",
         "26500",
+        "--trust-remote-code",
         "--tensor-parallel-size",
         str(args.tp_size),
         "--model",
@@ -45,6 +46,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     timeout_after = 60 * 5  # 5 minutes
     while True:
         line = p.stderr.readline().decode("utf-8")
+        print(line,flush=True)
         if "Application startup complete" in line:
             break
         if "error" in line.lower():
