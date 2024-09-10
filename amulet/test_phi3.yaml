@@ -1,0 +1,123 @@
+description: prunemoe
+ 
+target:
+  service: sing
+  name: GenAI-Shared-UKSouth2 # GenAI-Shared-UKSouth
+  workspace_name: Singularity-GenAI-WS-UKSouth2@Singularity-GenAI-GPU-UKSouth2 # aims-a100-westus3-WS # aims-a100-wus3-WS
+ 
+environment:
+  image: pytorch/pytorch:2.3.1-cuda12.1-cudnn8-devel
+  # image: a100-nvidia23.04-pytorch2.1.2-cuda12.1.0-deepspeed0.14.0-flashattn2.5.3:20240308
+  setup:
+    # - set -e -o xtrace
+    # - printenv
+    # - pip install -e .
+    # - wget https://aka.ms/downloadazcopy-v10-linux && tar xzf downloadazcopy-v10-linux && sudo mv azcopy_linux_amd64_*/azcopy /usr/local/bin/azcopy
+
+    - set -x
+    - sudo apt update -y
+    - sudo apt install -y bc
+    - export PATH=/home/aiscuser/.local/bin:$$PATH
+    - pip install ninja
+    - pip install packaging
+    - pip uninstall -y onnx onnxruntime-training
+    - pip uninstall -y torchdata
+    - pip install tiktoken
+    - pip install torch==2.1.2 --index-url https://download.pytorch.org/whl/cu121
+    - pip install flash-attn==2.5.8
+    - pip install git+https://github.com/xiaoxiawu-microsoft/vllm@fit-cluster-tests 
+    # - pip install mlflow
+    # - pip install azureml-mlflow
+    - pip install transformers==4.40.2
+    - pip install accelerate==0.27.2
+    # - export _AZUREML_SINGULARITY_JOB_UAI=/subscriptions/d676d072-7cbf-4197-b2d6-17ecf38370d0/resourcegroups/Singularity-GenAI-GPU-UKSouth2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/genai-sing-uai2
+ 
+ 
+ 
+storage:
+    output:
+        storage_account_name: tsinterns
+        container_name: t-zichongli
+        mount_dir: /t-zichongli
+    
+ 
+code:
+  local_dir: $CONFIG_DIR/../
+
+# identity:
+#   type: "UserAssigned"
+#   client_id: "e6a55924-d442-43f3-b3ad-31333cf25234"
+
+jobs:
+  - name: latency_phi3
+    sku: 1x80G1-A100
+    sla_tier: premium
+    priority: high
+    mpi: False
+    identity: managed
+    process_count_per_node: 1
+    command:
+      # - export _AZUREML_SINGULARITY_JOB_UAI=/subscriptions/d676d072-7cbf-4197-b2d6-17ecf38370d0/resourcegroups/Singularity-GenAI-GPU-UKSouth2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/genai-sing-uai2
+      - pip list
+      - cd benchmarks/inference/mii
+      - bash run_example.sh
+      # - python benchmark_latency.py --model microsoft/Phi-3-mini-4k-instruct --trust-remote-code --dtype bfloat16
+    submit_args:
+      max_attempts: 6
+      env:
+        DATASET_MOUNT_BLOCK_BASED_CACHE_ENABLED: True
+        _AZUREML_SINGULARITY_JOB_UAI: /subscriptions/d676d072-7cbf-4197-b2d6-17ecf38370d0/resourceGroups/Singularity-GenAI-GPU-UKSouth2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/genai-sing-uai2
+        # _AZUREML_SINGULARITY_JOB_UAI: /subscriptions/d676d072-7cbf-4197-b2d6-17ecf38370d0/resourceGroups/Singularity-GenAI-GPU-UKSouth2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/genai-sing-uai2
+        # /subscriptions/d676d072-7cbf-4197-b2d6-17ecf38370d0/resourcegroups/Singularity-GenAI-GPU-UKSouth2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/genai-sing-uai
+        # NCCL_DEBUG: "INFO"
+        # NCCL_DEBUG_SUBSYS: "INIT,GRAPH"
+    
+
+
+# search:
+#   job_template:
+#     name: reward-modeling_{model_type}_{data}_epoch_{epochs}_{exp_prefix}_en-min{entropy_threshold_min}_en-max{entropy_threshold_max}_en-num{num_thresholds}_min-seg-len{minimum_segment_length}-temp{temperature}-agg_func{agg_func}-seg_method{segment_method}
+#     sku: 2x80G8-A100-IB-NvLink
+#     process_count_per_node: 1
+#     sla_tier: Premium
+#     priority: high
+#     mpi: False
+#     identity: managed
+#     command:
+#       - set -x
+#       - export PATH=/home/aiscuser/.local/bin:$$PATH
+#       - export PATH=$$HOME/.local/bin/:$$PATH
+#       - pip list
+#       - echo {model_type} {data} {epochs} {exp_prefix} {entropy_threshold_min} {entropy_threshold_max} {num_thresholds} {minimum_segment_length} {temperature} {agg_func} {segment_method}
+#       - export WANDB_API_KEY=8f7652906eccb311de4742611ee0161ace361352
+#       - bash train_seg_rm.sh {model_type} {epochs} {data} {exp_prefix} {entropy_threshold_min} {entropy_threshold_max} {num_thresholds} {minimum_segment_length} {temperature} {agg_func} {segment_method}
+#     submit_args:
+#       env:
+#         DATASET_MOUNT_BLOCK_BASED_CACHE_ENABLED: True
+#         SHARED_MEMORY_PERCENT: 0.5
+#         _AZUREML_SINGULARITY_JOB_UAI: /subscriptions/d676d072-7cbf-4197-b2d6-17ecf38370d0/resourcegroups/Singularity-GenAI-GPU-UKSouth2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/genai-sing-uai2
+#   max_trials: 100
+#   type: grid
+#   params:
+#     - name: epochs
+#       values: [ 1 ]
+#     - name: data
+#       values: [ 'preference_700K' ] # capybara, ultrafeedback
+#     - name: model_type
+#       values: [ 'Phi3' ] # llama3, Phi3, train_seg_rm_lse_fix_one, train_seg_rm_debias(de length bias)
+#     - name: entropy_threshold_min
+#       values: [2]
+#     - name: entropy_threshold_max
+#       values: [-1]
+#     - name: num_thresholds
+#       values: [1]
+#     - name: minimum_segment_length
+#       values: [1]
+#     - name: temperature
+#       values: [0.5] # 0.004
+#     - name: exp_prefix
+#       values: [ 'train_seg_rm' ] # train_seg_rm
+#     - name: agg_func
+#       values: ['lse_leng_norm'] # 'avg', 'logsumexp', 'lse_leng_norm', 'segment_wise', 'segment_wise_v1', 'segment_wise_v2'
+#     - name: segment_method
+#       values: ['peak'] # 'peak', 'valley'
