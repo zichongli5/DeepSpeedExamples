@@ -20,7 +20,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dirs", type=str, nargs="+", \
                         help="Specify the data directories to generate plots for")
-    parser.add_argument("--out_dir", type=Path, default="./plots/throughput_latency")
+    parser.add_argument("--out_dir", type=Path, default="/t-zichongli/speed_results/plots/throughput_latency")
     parser.add_argument("--model_name", type=str, default="", help="Optional model name override")
     args = parser.parse_args()
     return args

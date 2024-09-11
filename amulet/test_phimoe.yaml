@@ -52,7 +52,7 @@ code:
 #   client_id: "e6a55924-d442-43f3-b3ad-31333cf25234"
 
 jobs:
-  - name: latency_phi3
+  - name: latency_phimoe
     sku: 1x80G1-A100
     sla_tier: premium
     priority: high
@@ -63,7 +63,7 @@ jobs:
       # - export _AZUREML_SINGULARITY_JOB_UAI=/subscriptions/d676d072-7cbf-4197-b2d6-17ecf38370d0/resourcegroups/Singularity-GenAI-GPU-UKSouth2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/genai-sing-uai2
       - pip list
       - cd benchmarks/inference/mii
-      - bash run_phi3.sh
+      - bash run_phimoe.sh
       # - python benchmark_latency.py --model microsoft/Phi-3-mini-4k-instruct --trust-remote-code --dtype bfloat16
     submit_args:
       max_attempts: 6

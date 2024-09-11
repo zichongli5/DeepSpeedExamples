@@ -119,7 +119,7 @@ def parse_args(
     client_parser.add_argument(
         "--out_json_dir",
         type=Path,
-        default="./results/",
+        default="/t-zichongli/speed_results",
         help="Directory to save result JSON files",
     )
     client_parser.add_argument(
@@ -225,7 +225,7 @@ def get_args_product(
 
 def get_results_path(args: argparse.Namespace) -> Path:
     return Path(
-        f"{args.out_json_dir}_{args.backend}/",
+        f"{args.out_json_dir}/",
         "-".join(
             (
                 args.model.replace("/", "_"),
